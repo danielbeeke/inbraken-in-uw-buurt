@@ -1,0 +1,19 @@
+{
+  "name": "misdaad",
+  "version": "0.0.0",
+  "dependencies": {
+    "sass-bootstrap": "~3.0.0",
+    "modernizr": "~2.6.2",
+    "jquery": "~1.10.2",
+    "leaflet": "~0.6.4",
+    "leaflet.markerclusterer": "*",
+    "L.GeoSearch": "smeijer/L.GeoSearch",
+    "bootstrap-daterangepicker": "*",
+    "font-awesome": "~4.0.1",
+    "leaflet-hash": "mlevans/leaflet-hash",
+    "peity": "~1.2.0",
+    "Leaflet.loading": "ebrelsford/Leaflet.loading",
+    "leaflet-locatecontrol": "domoritz/leaflet-locatecontrol#~0.18.0"
+  },
+  "devDependencies": {}
+}
