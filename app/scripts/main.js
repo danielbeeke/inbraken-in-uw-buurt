@@ -8,6 +8,9 @@ $(function() {
   var dateFormat = 'DD/MM/YYYY'
   var min = 0
   var max = 0
+  var visibleRobberies = {}
+  var visibleRobberiesTries = {}
+  var visibleDates = []
 
   L.Icon.Default.imagePath = '/images'
 
@@ -39,7 +42,7 @@ $(function() {
           position: 'topright'
       }).addTo(map);
 
-      $('.leaflet-control-geosearch').prependTo($('#filter-form > .form-group'))
+      $('.leaflet-control-geosearch').prependTo($('#filter-form > .form-group:first'))
 
       var hash = new L.Hash(map);
 
@@ -105,6 +108,9 @@ $(function() {
       var viewport = map.getBounds().toBBoxString()
 
       var selectedFilters = []
+      visibleRobberies = {}
+      visibleRobberiesTries = {}
+      visibleDates = []
 
       $.each($('.checkbox-filters'), function (index, item) {
         if ($(item).is(':checked')) {
@@ -119,6 +125,7 @@ $(function() {
       ' sum(case when  categoryId  != \'\' then 1 else 0 end) as count, ' +
       ' sum(case when  categoryId  = \'1\' then 1 else 0 end) as ct1,' +
       ' sum(case when  categoryId  = \'2\' then 1 else 0 end) as ct2,' +
+      ' max(date) as date,' +
       ' the_geom FROM misdaad WHERE ST_Contains(ST_MakeEnvelope(' + viewport + ', 4326), the_geom)' +
       ' AND (date >= (\'' + timeRangeStart.format(dbTimeFormat) + '\') AND date <= (\'' + timeRangeEnd.format(dbTimeFormat) + '\'))'
 
@@ -172,12 +179,79 @@ $(function() {
         })
 
         $.each(result.features, function (index, row) {
+          var date = row.properties.date
+          var momentDate = moment(date)
+          momentDate.lang('nl')
+          var formattedDate = momentDate.format('D-M-YYYY')
+
+          if (jQuery.inArray(formattedDate, visibleDates) == -1) {
+            visibleDates.push(formattedDate)
+          }
+
+          if (!visibleRobberies[date]) {
+            visibleRobberies[date] = 0
+          }
+
+          visibleRobberies[date] = visibleRobberies[date] + row.properties.ct1
+
+          if (!visibleRobberiesTries[date]) {
+            visibleRobberiesTries[date] = 0
+          }
+
+          visibleRobberiesTries[date] = visibleRobberiesTries[date] + row.properties.ct2
+
           var marker = new L.Marker([row.geometry.coordinates[1], row.geometry.coordinates[0]])
           marker.data = row
           markers.addLayer(marker)
         })
 
         map.addLayer(markers);
+
+        var arrVisibleRobberiesTries = array_values(visibleRobberiesTries)
+        var arrVisibleRobberies = array_values(visibleRobberies)
+
+        var series = []
+
+        if ($('#poging-tot-woninginbraak:checked').length || selectedFilters.length == 0) {
+          series.push({
+            name: 'Inbraakpogingen',
+            color: '#FFAD00',
+            data: arrVisibleRobberiesTries
+          })
+        }
+
+        if ($('#woninginbraak:checked').length || selectedFilters.length == 0) {
+          series.push({
+            name: 'Inbraken',
+            color: '#ac0000',
+            data: arrVisibleRobberies
+          })
+        }
+
+        var chart = $('#chart').highcharts({
+                    title: {
+                        text: '',
+                    },
+                    legend: {
+                      enabled: false
+                    },
+                    credits: {
+                      enabled: false
+                    },
+                    xAxis: {
+                        categories: visibleDates,
+                        labels: {
+                          enabled: false
+                        }
+                    },
+                    yAxis: {
+                        title: {
+                            text: ''
+                        },
+                        min: 0,
+                    },
+                    series: series
+                });
 
         // Smallest marker is 30px
         // Biggest is 70px
@@ -207,3 +281,24 @@ $(function() {
   functions.init()
 
 })
+
+function array_values(input) {
+  //  discuss at: http://phpjs.org/functions/array_values/
+  // original by: Kevin van Zonneveld (http://kevin.vanzonneveld.net)
+  // improved by: Brett Zamir (http://brett-zamir.me)
+  //   example 1: array_values( {firstname: 'Kevin', surname: 'van Zonneveld'} );
+  //   returns 1: {0: 'Kevin', 1: 'van Zonneveld'}
+
+  var tmp_arr = [],
+    key = '';
+
+  if (input && typeof input === 'object' && input.change_key_case) { // Duck-type check for our own array()-created PHPJS_Array
+    return input.values();
+  }
+
+  for (key in input) {
+    tmp_arr[tmp_arr.length] = input[key];
+  }
+
+  return tmp_arr;
+}

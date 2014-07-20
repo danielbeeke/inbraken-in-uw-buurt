@@ -13,7 +13,8 @@
     "leaflet-hash": "mlevans/leaflet-hash",
     "peity": "~1.2.0",
     "Leaflet.loading": "ebrelsford/Leaflet.loading",
-    "leaflet-locatecontrol": "domoritz/leaflet-locatecontrol#~0.18.0"
+    "leaflet-locatecontrol": "domoritz/leaflet-locatecontrol#~0.18.0",
+    "highcharts": "~4.0.3"
   },
   "devDependencies": {}
 }
