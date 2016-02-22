@@ -3,7 +3,7 @@ $(function() {
   var map
   var locations = {}
   var markers
-  var timeRangeStart = moment().subtract('days', 29)
+  var timeRangeStart = moment().subtract(29, 'days')
   var timeRangeEnd = moment()
   var dateFormat = 'DD/MM/YYYY'
   var min = 0
@@ -57,9 +57,9 @@ $(function() {
           {
             opens: 'left',
             ranges: {
-               'Afgelopen 7 dagen': [moment().subtract('days', 6), moment()],
+               'Afgelopen 7 dagen': [moment().subtract(6, 'days'), moment()],
                'Deze maand': [moment().startOf('month'), moment().endOf('month')],
-               'Afgelopen 3 maanden': [moment().subtract('month', 3).startOf('month'), moment().subtract('month', 1).endOf('month')]
+               'Afgelopen 3 maanden': [moment().subtract(3, 'month').startOf('month'), moment().subtract(1, 'month').endOf('month')]
             },
             format: 'DD/MM/YYYY',
             locale: {
@@ -69,7 +69,7 @@ $(function() {
               applyLabel: 'Filteren',
               cancelLabel: 'Sluiten',
             },
-            startDate: moment().subtract('days', 29),
+            startDate: moment().subtract(29, 'days'),
             endDate: moment()
           },
           function(start, end) {
@@ -92,7 +92,7 @@ $(function() {
         functions.update()
       })
 
-      $('#reportrange span').html(moment().subtract('days', 29).format(dateFormat) + ' - ' + moment().format(dateFormat));
+      $('#reportrange span').html(moment().subtract(29, 'days').format(dateFormat) + ' - ' + moment().format(dateFormat));
 
       setTimeout(function () {
         if (window.location.hash) {
@@ -108,9 +108,9 @@ $(function() {
       var viewport = map.getBounds().toBBoxString()
 
       var selectedFilters = []
-      visibleRobberies = {}
-      visibleRobberiesTries = {}
-      visibleDates = []
+      var visibleRobberies = {}
+      var visibleRobberiesTries = {}
+      var visibleDates = []
 
       $.each($('.checkbox-filters'), function (index, item) {
         if ($(item).is(':checked')) {
@@ -121,11 +121,11 @@ $(function() {
       // Needed format 2013-10-25 00:00:01
       var dbTimeFormat = 'YYYY-MM-DD hh:mm:ss'
 
-      var query = 'SELECT DISTINCT ON (postal_code) postal_code,' +
+      var query = 'SELECT DISTINCT ON (postal_code, date) postal_code,' +
       ' sum(case when  categoryId  != \'\' then 1 else 0 end) as count, ' +
       ' sum(case when  categoryId  = \'1\' then 1 else 0 end) as ct1,' +
       ' sum(case when  categoryId  = \'2\' then 1 else 0 end) as ct2,' +
-      ' max(date) as date,' +
+      ' min(date) as date,' + // The bug is here.
       ' the_geom FROM misdaad WHERE ST_Contains(ST_MakeEnvelope(' + viewport + ', 4326), the_geom)' +
       ' AND (date >= (\'' + timeRangeStart.format(dbTimeFormat) + '\') AND date <= (\'' + timeRangeEnd.format(dbTimeFormat) + '\'))'
 
@@ -133,7 +133,7 @@ $(function() {
          query = query + ' AND categoryId IN (' + selectedFilters.join(',') + ')'
       }
 
-      query = query + ' GROUP BY the_geom, postal_code ORDER BY postal_code'
+      query = query + ' GROUP BY the_geom, postal_code ORDER BY date'
 
       $.get('http://danielbeeke.cartodb.com/api/v2/sql?q=' + query + '&format=GeoJSON', function (result) {
 
@@ -179,10 +179,11 @@ $(function() {
         })
 
         $.each(result.features, function (index, row) {
+
           var date = row.properties.date
           var momentDate = moment(date)
-          momentDate.lang('nl')
-          var formattedDate = momentDate.format('D-M-YYYY')
+          momentDate.locale('nl')
+          var formattedDate = momentDate.format('DD-MM-YYYY')
 
           if (jQuery.inArray(formattedDate, visibleDates) == -1) {
             visibleDates.push(formattedDate)
@@ -192,13 +193,17 @@ $(function() {
             visibleRobberies[date] = 0
           }
 
-          visibleRobberies[date] = visibleRobberies[date] + row.properties.ct1
+          if (row.properties.ct1) {
+            visibleRobberies[date] = parseInt(visibleRobberies[date]) + parseInt(row.properties.ct1)
+          }
 
           if (!visibleRobberiesTries[date]) {
             visibleRobberiesTries[date] = 0
           }
 
-          visibleRobberiesTries[date] = visibleRobberiesTries[date] + row.properties.ct2
+          if (row.properties.ct2) {
+            visibleRobberiesTries[date] = parseInt(visibleRobberiesTries[date]) + parseInt(row.properties.ct2)
+          }
 
           var marker = new L.Marker([row.geometry.coordinates[1], row.geometry.coordinates[0]])
           marker.data = row

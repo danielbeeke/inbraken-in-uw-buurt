@@ -5,7 +5,7 @@
 
   $most_recent_date_query = 'SELECT date FROM misdaad ORDER BY date DESC LIMIT 1';
 
-  $recent_date_result = json_Decode(file_get_contents($url . urlencode($most_recent_date_query)), TRUE);
+  $recent_date_result = json_decode(file_get_contents($url . urlencode($most_recent_date_query)), TRUE);
 
   $last_date = strtotime($recent_date_result['rows'][0]['date']);
 

@@ -5,7 +5,7 @@
     "sass-bootstrap": "~3.0.0",
     "modernizr": "~2.6.2",
     "jquery": "~1.10.2",
-    "leaflet": "~0.6.4",
+    "leaflet": "~0.7",
     "leaflet.markerclusterer": "*",
     "L.GeoSearch": "smeijer/L.GeoSearch",
     "bootstrap-daterangepicker": "*",
